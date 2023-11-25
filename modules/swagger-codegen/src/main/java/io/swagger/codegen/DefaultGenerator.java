@@ -460,6 +460,15 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
             return;
         }
         Map<String, List<CodegenOperation>> paths = processPaths(swagger.getPaths());
+        int c = 0;
+        for (String m : paths.keySet()) {
+            if(m.length()==0){
+                c++;
+            }
+        }
+        if(c>0){
+            c=0;
+        }
         Set<String> apisToGenerate = null;
         String apiNames = System.getProperty("apis");
         if (apiNames != null && !apiNames.isEmpty()) {
@@ -833,7 +842,13 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
 
     public Map<String, List<CodegenOperation>> processPaths(Map<String, Path> paths) {
         Map<String, List<CodegenOperation>> ops = new TreeMap<String, List<CodegenOperation>>();
+        boolean f = false;
+        int c = 0;
         for (String resourcePath : paths.keySet()) {
+            c++;
+            if(c==14){
+                f = true;
+            }
             Path path = paths.get(resourcePath);
             processOperation(resourcePath, "get", path.getGet(), ops, path);
             processOperation(resourcePath, "head", path.getHead(), ops, path);
@@ -842,6 +857,7 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
             processOperation(resourcePath, "delete", path.getDelete(), ops, path);
             processOperation(resourcePath, "patch", path.getPatch(), ops, path);
             processOperation(resourcePath, "options", path.getOptions(), ops, path);
+
         }
         return ops;
     }
@@ -910,7 +926,12 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
             try {
                 CodegenOperation codegenOperation = config.fromOperation(config.escapeQuotationMark(resourcePath), httpMethod, operation, swagger.getDefinitions(), swagger);
                 codegenOperation.tags = new ArrayList<Tag>(tags);
-                config.addOperationToGroup(config.sanitizeTag(tag.getName()), config.escapeQuotationMark(resourcePath), operation, codegenOperation, operations);
+                String tname = tag.getName();
+                String sname = config.sanitizeTag(tname);
+                if(sname.length()==0){
+                    sname = "_";
+                }
+                config.addOperationToGroup(sname, config.escapeQuotationMark(resourcePath), operation, codegenOperation, operations);
 
                 List<Map<String, List<String>>> securities = operation.getSecurity();
                 if (securities == null && swagger.getSecurity() != null) {
@@ -973,8 +994,12 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
     protected Map<String, Object> processOperations(CodegenConfig config, String tag, List<CodegenOperation> ops, List<Object> allModels) {
         Map<String, Object> operations = new HashMap<String, Object>();
         Map<String, Object> objs = new HashMap<String, Object>();
-        objs.put("classname", config.toApiName(tag));
-        objs.put("pathPrefix", config.toApiVarName(tag));
+        try {
+            objs.put("classname", config.toApiName(tag));
+            objs.put("pathPrefix", config.toApiVarName(tag));
+        }catch (Exception ex){
+            ex.printStackTrace();
+        }
 
         // check for operationId uniqueness
         Set<String> opIds = new HashSet<String>();
