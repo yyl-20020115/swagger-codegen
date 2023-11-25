@@ -3611,14 +3611,14 @@ public class DefaultCodegen {
      * @return Sanitized tag
      */
     public String sanitizeTag(String tag) {
-        tag = camelize(sanitizeName(tag));
-
+        String s_tag = camelize(sanitizeName(tag));
+        //FIXED:
         // tag starts with numbers
-        if (tag.matches("^\\d.*")) {
-            tag = "Class" + tag;
+        if (s_tag.matches("^\\d.*")) {
+            s_tag = "Class" + s_tag;
         }
 
-        return tag;
+        return s_tag.length()==0?tag:s_tag;
     }
 
     /**
