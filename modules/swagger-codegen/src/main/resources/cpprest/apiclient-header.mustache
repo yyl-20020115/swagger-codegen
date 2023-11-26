@@ -13,6 +13,7 @@
 #include "ApiException.h"
 #include "IHttpBody.h"
 #include "HttpContent.h"
+#include "Object.h"
 
 #include <memory>
 #include <vector>
@@ -43,7 +44,9 @@ public:
     static utility::string_t parameterToString(const utility::datetime &value);
     template<class T>
     static utility::string_t parameterToString(const std::vector<T>& value);
-
+    static utility::string_t parameterToString(Object& value) {
+        return value.get_inner_object().as_string();
+    }
     pplx::task<web::http::http_response> callApi(
         const utility::string_t& path,
         const utility::string_t& method,

@@ -38,7 +38,9 @@ public:
     /// Object manipulation
     web::json::value getValue(const utility::string_t& key) const;
     void setValue(const utility::string_t& key, const web::json::value& value);
-
+    web::json::value& get_inner_object(){
+        return this->m_object;
+    }
 private:
     web::json::value m_object;
 };

@@ -6,14 +6,24 @@ import io.swagger.codegen.ClientOptInput;
 import io.swagger.codegen.CodegenConstants;
 import io.swagger.codegen.DefaultGenerator;
 import io.swagger.codegen.config.CodegenConfigurator;
+import io.swagger.models.Model;
+import io.swagger.models.Swagger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.xml.crypto.dsig.keyinfo.KeyValue;
 
 import static io.swagger.codegen.config.CodegenConfiguratorUtils.*;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.io.BufferedReader;
+
+import java.io.File;
+
+import java.io.FileReader;
+
+import java.io.IOException;
 
 /**
  * User: lanwen Date: 24.03.15 Time: 20:22
@@ -21,8 +31,36 @@ import java.util.List;
 
 @Command(name = "generate", description = "Generate code with chosen lang")
 public class Generate implements Runnable {
+    public static Map<String,String> ReadDictFile(String path) {
+        Map<String,String> dict = new HashMap<>();
+        File file = new File(path);
+        try {
+            FileReader fileReader = new FileReader(file);
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            String line = null;
+            while ((line = bufferedReader.readLine()) != null) {
+                String[] parts = null;
+                if(line.indexOf("|")>=0){
+                    parts = line.split("\\|");
+                }else{
+                    parts = line.split(" ");
+                }
+                if(parts.length>=2) {
+                    dict.put(parts[0].trim(), parts[1].trim());
+                }
+            }
 
+            bufferedReader.close();
+            fileReader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return dict;
+    }
     public static final Logger LOG = LoggerFactory.getLogger(Generate.class);
+
+    @Option(name = {"-d", "--dict"}, description = "CH-EN dict file")
+    private String dictPath;
 
     @Option(name = {"-v", "--verbose"}, description = "verbose mode")
     private Boolean verbose;
@@ -282,6 +320,40 @@ public class Generate implements Runnable {
         applyReservedWordsMappingsKvpList(reservedWordsMappings, configurator);
         final ClientOptInput clientOptInput = configurator.toClientOptInput();
 
-        new DefaultGenerator().opts(clientOptInput).generate();
+        DefaultGenerator generator = new DefaultGenerator();
+        if(new File(dictPath).exists()) {
+            Map<String, String> dict = ReadDictFile(dictPath);
+            generator.NonAsciiToAsciiMap.putAll(dict);
+        }
+        Swagger swagger = clientOptInput.getSwagger();
+        Map<String, Model> definitions = swagger.getDefinitions();
+        Set<String> keys = new HashSet<>(definitions.keySet());
+        for(String key : keys){
+            Model model = definitions.get(key);
+            String cuKey = key;
+            for(String naKey:generator.NonAsciiToAsciiMap.keySet()){
+                if(cuKey.contains(naKey)){
+                    //Replace the key
+                    cuKey = cuKey.replaceAll(naKey,generator.NonAsciiToAsciiMap.get(naKey));
+                }
+            }
+            if(!cuKey.equals(key)){
+                //remove the original
+                definitions.remove(key);
+                //change the title
+                model.setTitle(cuKey);
+                //write back to definitions
+                definitions.put(cuKey,model);
+                //if key changed
+                System.out.println("Found NON ASCII Tag Name: \""+key+"\" ---> \""+cuKey+"\"");
+
+            }else if(DefaultGenerator.hasNonASCIILetter(key)){
+                System.out.println("Found NON ASCII Tag Name: \""+key+"\" [*]");
+                //not changed, display it
+            }
+        }
+
+
+        generator.opts(clientOptInput).generate();
     }
 }

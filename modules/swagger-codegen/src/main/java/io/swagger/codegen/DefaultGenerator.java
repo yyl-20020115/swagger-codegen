@@ -19,8 +19,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DefaultGenerator extends AbstractGenerator implements Generator {
+    public Map<String,String> NonAsciiToAsciiMap = new HashMap<>();
     protected final Logger LOGGER = LoggerFactory.getLogger(DefaultGenerator.class);
     protected CodegenConfig config;
     protected ClientOptInput opts;
@@ -581,6 +584,7 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
         }
 
         for (SupportingFile support : config.supportingFiles()) {
+            boolean b = false;
             try {
                 String outputFolder = config.outputFolder();
                 if (StringUtils.isNotEmpty(support.folder)) {
@@ -839,6 +843,33 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
         return ops;
     }
 
+    //NOTICE:只检测中文
+    public static boolean hasNonASCIILetter(String s){
+        for (char c : s.toCharArray()) {
+            if(!isEnglishAndDigit(new String(new char[]{c})))
+                return true;
+        }
+        return false;
+    }
+    public static boolean isEnglishAndDigit(String input) {
+        String regex = "^[a-zA-Z0-9_]+$";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(input);
+        return matcher.matches();
+    }
+    public static boolean isChinese(char c) {
+        Character.UnicodeBlock ub = Character.UnicodeBlock.of(c);
+        if (ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS
+                || ub == Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS
+                || ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A
+                || ub == Character.UnicodeBlock.CJK_SYMBOLS_AND_PUNCTUATION
+                || ub == Character.UnicodeBlock.GENERAL_PUNCTUATION
+                || ub == Character.UnicodeBlock.HALFWIDTH_AND_FULLWIDTH_FORMS) {
+            return true;
+        }
+        return false;
+    }
+
     protected void processOperation(String resourcePath, String httpMethod, Operation operation, Map<String, List<CodegenOperation>> operations, Path path) {
         if (operation == null) {
             return;
@@ -903,9 +934,28 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
             try {
                 CodegenOperation codegenOperation = config.fromOperation(resourcePath, httpMethod, operation, swagger.getDefinitions(), swagger);
                 codegenOperation.tags = new ArrayList<Tag>(tags);
+                //NOTICE: changed here!
+                String t = "";
                 String n = tag.getName();
+                String pre = n;
+                if(NonAsciiToAsciiMap.size()>0) {
+                    for (String key : NonAsciiToAsciiMap.keySet()) {
+                        int p = n.indexOf(key);
+                        if (p >= 0) {
+                            n = n.replaceAll(key, NonAsciiToAsciiMap.get(key));
+                        }
+                    }
+                }
+                if(n.equals(pre)){
+                    if(hasNonASCIILetter(pre)){
+                        System.out.println("Found NON ASCII Tag Name: \""+pre+"\" [*]");
+                    }
+                }else{
+                    System.out.println("Found NON ASCII Tag Name: \""+pre+"\" ---> \""+n+"\"");
+                }
                 String s = config.sanitizeTag(n);
                 config.addOperationToGroup(s, resourcePath, operation, codegenOperation, operations);
+                tag.setName(s);
 
                 List<Map<String, List<String>>> securities = operation.getSecurity();
                 if (securities == null && swagger.getSecurity() != null) {
