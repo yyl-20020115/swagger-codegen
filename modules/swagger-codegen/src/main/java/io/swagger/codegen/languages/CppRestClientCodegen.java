@@ -398,6 +398,7 @@ public class CppRestClientCodegen extends AbstractCppCodegen {
 
     @Override
     public String toModelName(String type) {
+        //NOTICE:fixed by Yilin
         if(type.equals("ByteArray")){
             type = "utility::string_t";
         }
