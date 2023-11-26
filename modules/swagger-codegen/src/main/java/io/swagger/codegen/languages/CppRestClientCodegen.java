@@ -12,14 +12,7 @@ import java.util.Set;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
-import io.swagger.codegen.CliOption;
-import io.swagger.codegen.CodegenConstants;
-import io.swagger.codegen.CodegenModel;
-import io.swagger.codegen.CodegenOperation;
-import io.swagger.codegen.CodegenParameter;
-import io.swagger.codegen.CodegenProperty;
-import io.swagger.codegen.CodegenType;
-import io.swagger.codegen.SupportingFile;
+import io.swagger.codegen.*;
 import io.swagger.codegen.utils.ModelUtils;
 import io.swagger.models.Model;
 import io.swagger.models.Operation;
@@ -201,6 +194,25 @@ public class CppRestClientCodegen extends AbstractCppCodegen {
 
     @Override
     public String toModelImport(String name) {
+        if(DefaultGenerator.hasNonASCIILetter(name)){
+            String cname = name;
+            for(String naKey:DefaultGenerator.NonAsciiToAsciiMap.keySet()){
+                if(cname.contains(naKey)){
+                    //Replace the key
+                    cname = cname.replaceAll(naKey,DefaultGenerator.NonAsciiToAsciiMap.get(naKey));
+                }
+            }
+            if(!cname.equals(name)){
+                //if key changed
+                System.out.println("Found NON ASCII Tag Name: \""+name+"\" ---> \""+cname+"\" [+1]");
+
+            }else {
+                System.out.println("Found NON ASCII Tag Name: \""+name+"\" [*1]");
+                //not changed, display it
+            }
+            name = cname;
+        }
+        //NOTICE: #include
         if (importMapping.containsKey(name)) {
             return importMapping.get(name);
         } else {
@@ -380,6 +392,26 @@ public class CppRestClientCodegen extends AbstractCppCodegen {
 
     @Override
     public String toModelName(String type) {
+
+        if(DefaultGenerator.hasNonASCIILetter(type)){
+            String cname = type;
+            for(String naKey:DefaultGenerator.NonAsciiToAsciiMap.keySet()){
+                if(cname.contains(naKey)){
+                    //Replace the key
+                    cname = cname.replaceAll(naKey,DefaultGenerator.NonAsciiToAsciiMap.get(naKey));
+                }
+            }
+            if(!cname.equals(type)){
+                //if key changed
+                System.out.println("Found NON ASCII Tag Name: \""+type+"\" ---> \""+cname+"\" [+1]");
+
+            }else {
+                System.out.println("Found NON ASCII Tag Name: \""+type+"\" [*1]");
+                //not changed, display it
+            }
+            type = cname;
+        }
+
         if (typeMapping.keySet().contains(type) || typeMapping.values().contains(type)
                 || importMapping.values().contains(type) || defaultIncludes.contains(type)
                 || languageSpecificPrimitives.contains(type)) {

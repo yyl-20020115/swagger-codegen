@@ -23,7 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class DefaultGenerator extends AbstractGenerator implements Generator {
-    public Map<String,String> NonAsciiToAsciiMap = new HashMap<>();
+    public static Map<String,String> NonAsciiToAsciiMap = new HashMap<>();
     protected final Logger LOGGER = LoggerFactory.getLogger(DefaultGenerator.class);
     protected CodegenConfig config;
     protected ClientOptInput opts;
@@ -852,7 +852,7 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
         return false;
     }
     public static boolean isEnglishAndDigit(String input) {
-        String regex = "^[a-zA-Z0-9_]+$";
+        String regex = "^[a-zA-Z0-9_:\\.#\\\" ></]+$";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(input);
         return matcher.matches();
@@ -948,10 +948,10 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
                 }
                 if(n.equals(pre)){
                     if(hasNonASCIILetter(pre)){
-                        System.out.println("Found NON ASCII Tag Name: \""+pre+"\" [*]");
+                        System.out.println("Found NON ASCII Tag Name: \""+pre+"\" [*2]");
                     }
                 }else{
-                    System.out.println("Found NON ASCII Tag Name: \""+pre+"\" ---> \""+n+"\"");
+                    System.out.println("Found NON ASCII Tag Name: \""+pre+"\" ---> \""+n+"\" [+2]");
                 }
                 String s = config.sanitizeTag(n);
                 config.addOperationToGroup(s, resourcePath, operation, codegenOperation, operations);
