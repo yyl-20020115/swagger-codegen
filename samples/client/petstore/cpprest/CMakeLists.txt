@@ -13,6 +13,7 @@ cmake_minimum_required (VERSION 2.8)
 #PROJECT's NAME
 project(CppRestSwaggerClient)
 
+add_definitions(-DBOOST_NO_CXX11_DECLTYPE)
 
 # THE LOCATION OF OUTPUT BINARIES
 set(CMAKE_LIBRARY_DIR ${PROJECT_SOURCE_DIR}/lib)
