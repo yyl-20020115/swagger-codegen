@@ -227,6 +227,12 @@ public class CppRestClientCodegen extends AbstractCppCodegen {
         Set<String> oldImports = codegenModel.imports;
         codegenModel.imports = new HashSet<String>();
         for (String imp : oldImports) {
+            if(imp=="ByteArray"){
+                //continue;
+                //NOTICE: use string_t instead of ByteArray
+                //imp="utility::string_t";
+                continue;
+            }
             String newImp = toModelImport(imp);
             if (!newImp.isEmpty()) {
                 codegenModel.imports.add(newImp);
@@ -392,7 +398,9 @@ public class CppRestClientCodegen extends AbstractCppCodegen {
 
     @Override
     public String toModelName(String type) {
-
+        if(type.equals("ByteArray")){
+            type = "utility::string_t";
+        }
         if(DefaultGenerator.hasNonASCIILetter(type)){
             String cname = type;
             for(String naKey:DefaultGenerator.NonAsciiToAsciiMap.keySet()){
